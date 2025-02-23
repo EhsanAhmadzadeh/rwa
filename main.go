@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"wa-service/config"
+	"wa-service/utils"
 
 	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
@@ -14,25 +15,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// WhatsAppClient wraps the whatsmeow client and its related functionalities.
 type WhatsAppClient struct {
-	client    *whatsmeow.Client
-	container *sqlstore.Container
+	Client *whatsmeow.Client
 }
 
 // PairingCode represents the pairing code returned by WhatsApp.
 type PairingCode string
 
-// NewWhatsAppClient initializes a new WhatsApp client.
-func NewWhatsAppClient() (*WhatsAppClient, error) {
-	// Create a new database connection using sqlstore
+// NewContainer initializes and returns a new database container.
+// This should only get instantiated in app startup.
+// TODO: Use Singletone here!!
+func NewContainer() (*sqlstore.Container, error) {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
-	container, err := sqlstore.New("sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", config.AppConfig.DB_PATH), dbLog)
+	sqlContainer, err := sqlstore.New("sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", config.AppConfig.DB_PATH), dbLog)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, err
 	}
+	config.AppConfig.Container = sqlContainer
+	return sqlContainer, nil
+}
 
-	deviceStore, err := container.GetFirstDevice()
+// Initializes NewWhatsAppClient a new WhatsApp client and set it on the global config.
+func NewWhatsAppClient() (*WhatsAppClient, error) {
+
+	deviceStore, err := config.AppConfig.Container.GetFirstDevice()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device store: %w", err)
 	}
@@ -40,20 +46,20 @@ func NewWhatsAppClient() (*WhatsAppClient, error) {
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
 
-	return &WhatsAppClient{client: client, container: container}, nil
+	return &WhatsAppClient{Client: client}, nil
 }
 
 // PairPhone pairs the WhatsApp client with the given phone number and returns the pairing code.
 func (wac *WhatsAppClient) PairPhone(phoneNumber string) (PairingCode, error) {
 	// Only connect if not already connected
-	if !wac.client.IsConnected() {
-		if err := wac.client.Connect(); err != nil {
+	if !wac.Client.IsConnected() {
+		if err := wac.Client.Connect(); err != nil {
 			return "", fmt.Errorf("failed to connect to WhatsApp: %w", err)
 		}
 	}
 
 	// Pair the phone
-	pairingCode, err := wac.client.PairPhone(phoneNumber, true, 1, "Chrome (mac)")
+	pairingCode, err := wac.Client.PairPhone(phoneNumber, true, 1, "Chrome (mac)")
 	if err != nil {
 		return "", fmt.Errorf("error sending OTP: %w", err)
 	}
@@ -63,7 +69,7 @@ func (wac *WhatsAppClient) PairPhone(phoneNumber string) (PairingCode, error) {
 
 // Close shuts down the WhatsApp client properly.
 func (wac *WhatsAppClient) Close() {
-	wac.client.Disconnect()
+	wac.Client.Disconnect()
 }
 
 // loginHandler handles the pairing request.
@@ -92,12 +98,10 @@ func (wac *WhatsAppClient) loginHandler(c *gin.Context) {
 func main() {
 	config.InitConfig()
 
-	// Initialize WhatsApp client
-	wac, err := NewWhatsAppClient()
-	if err != nil {
-		log.Fatalf("Error initializing WhatsApp client: %v", err)
-	}
+	config.AppConfig.Container = utils.MustInit(NewContainer, "database container")
+	wac := utils.MustInit(NewWhatsAppClient, "WhatsApp client")
 	defer wac.Close() // Ensure cleanup on exit
+	// config.AppConfig.Container = container
 
 	// Set up Gin router
 	r := gin.Default()

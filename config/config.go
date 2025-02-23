@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"go.mau.fi/whatsmeow/store/sqlstore"
 )
 
 // Global config instance
@@ -12,8 +13,9 @@ var AppConfig *Config
 
 // Config holds the configuration values.
 type Config struct {
-	Port    string
-	DB_PATH string
+	Port      string
+	DB_PATH   string
+	Container *sqlstore.Container
 }
 
 // TODO: This should be a singleton

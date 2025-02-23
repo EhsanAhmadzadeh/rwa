@@ -16,15 +16,15 @@ type Config struct {
 	DB_PATH string
 }
 
+// TODO: This should be a singleton
 // NewConfig initializes a new Config instance
-func NewConfig() *Config {
+func InitConfig() {
 	cfg := &Config{}
 	err := cfg.Load()
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
 	AppConfig = cfg
-	return AppConfig
 }
 
 // Load reads the environment variables and assigns them to Config

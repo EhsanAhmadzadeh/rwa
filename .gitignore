@@ -23,3 +23,47 @@ go.work.sum
 
 # env file
 .env
+
+
+
+
+# Binaries and executables
+*.exe
+*.out
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# Go build artifacts
+/bin/
+/pkg/
+*.test
+*.prof
+
+# Go module-related files
+go.sum
+
+# Logs and debugging
+*.log
+*.trace
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+
+
+
+**/*.db
+.env

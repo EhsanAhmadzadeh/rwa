@@ -5,40 +5,23 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"go.mau.fi/whatsmeow/store/sqlstore"
 )
 
-// Global config instance
-var AppConfig *Config
+var PORT string = GetEnv("PORT", "8080")
+var DATABASE_URL string = GetEnv("DATABASE_URL", "wadb.db")
 
-// Config holds the configuration values.
-type Config struct {
-	Port      string
-	DB_PATH   string
-	Container *sqlstore.Container
+// LoadConfig loads environment variables from .env file
+func LoadConfig() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: No .env file found")
+	}
 }
 
-// TODO: This should be a singleton
-// NewConfig initializes a new Config instance
-func InitConfig() {
-	cfg := &Config{}
-	err := cfg.Load()
-	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
+// GetEnv gets environment variables with a fallback
+func GetEnv(key, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
 	}
-	AppConfig = cfg
-}
-
-// Load reads the environment variables and assigns them to Config
-func (c *Config) Load() error {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("Warning: No .env file found, using system env vars")
-	}
-
-	c.Port = os.Getenv("PORT")
-	c.DB_PATH = os.Getenv("DB_PATH")
-
-	log.Println("Config loaded successfully:", *c)
-
-	return nil
+	return value
 }

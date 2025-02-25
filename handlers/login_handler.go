@@ -14,7 +14,7 @@ type LoginHandler struct {
 }
 
 func NewLoginHandler(service *services.WAService) *LoginHandler {
-	return &LoginHandler{service: service}
+	return &LoginHandler{service}
 }
 
 func (h *LoginHandler) LoginPairPhone(c *gin.Context) {

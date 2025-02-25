@@ -49,17 +49,18 @@ func (s *WAService) CreateClient() {
 		log.Println("Error: Device is nil, cannot create WhatsApp client")
 		return
 	}
+	// Connect to the WhatsApp WebSocket
 
 	client := whatsmeow.NewClient(s.Device, nil)
 	s.Client = client
 
-	// Connect to the WhatsApp WebSocket
-	err := client.Connect()
-	if err != nil {
-		log.Println("Failed to connect to WhatsApp WebSocket:", err)
-		s.Client = nil // Ensure it's set to nil if connection fails
-		return
+	// Only connect  WhatsApp WebSocket if not already connected
+	if !s.Client.IsConnected() {
+		if err := s.Client.Connect(); err != nil {
+			fmt.Println("Failed to connect to WhatsApp: %w", err)
+		}
 	}
+
 	log.Println("WhatsApp client successfully connected to WebSocket")
 }
 

@@ -5,6 +5,7 @@ import (
 	"gin-api/config"
 	"log"
 
+	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 )
 
@@ -14,7 +15,7 @@ var DB *sqlstore.Container
 func InitDB() {
 	sqlContainer, err := sqlstore.New("sqlite3", fmt.Sprintf("file:%s?_foreign_keys=on", config.DATABASE_URL), nil)
 	if err != nil {
-		log.Println("Couldn't initialize the database.")
+		log.Println("Couldn't initialize the database: ", err)
 	} else {
 
 		DB = sqlContainer

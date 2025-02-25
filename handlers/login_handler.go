@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"gin-api/services"
 	"log"
 	"net/http"
@@ -17,13 +18,30 @@ func NewLoginHandler(service *services.WAService) *LoginHandler {
 }
 
 func (h *LoginHandler) LoginPairPhone(c *gin.Context) {
+
+	if h.service.Client == nil {
+		log.Println("Error: WhatsApp Client is nil")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "WhatsApp client is not initialized"})
+		return
+	}
+
 	phoneNumber := c.Query("phone")
 	if phoneNumber == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "phone number is required"})
 		return
 	}
 	log.Println("Received pairing request for:", phoneNumber)
-	h.service.Client.PairPhone(phoneNumber, true, 1, "Chrome (mac)")
+	pairingCode, err := h.service.Client.PairPhone(phoneNumber, true, 1, "Chrome (mac)")
+	if err != nil {
+		log.Println("Pairing failed:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	log.Println("Pairing code sent:", pairingCode)
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Please enter the pairing code %s for account with phone number %s", pairingCode, phoneNumber),
+	})
 }
 
 // func (h *LoginHandler) CreateUser(c *gin.Context) {
